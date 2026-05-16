@@ -39,3 +39,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisma
+*.db
+
+# Claude Code
+.claude/
+.agents/
+.codebuddy/
+skills-lock.json
+
+# Survey reports
+survey-report.html
+survey-report.txt
+
+# Task files
+task_plan.md
+progress.md
+findings.md

@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  company     String   @default("")
+  industry    String   @default("")
+  contactName String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  requirements Requirement[]
+}
+
+model Requirement {
+  id            String   @id @default(cuid())
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  title         String   @default("")
+  rawInput      String
+  sourceType    String   @default("text")
+  scenario      String   @default("")
+  status        String   @default("pending")
+  priority      String   @default("P1")
+  extractedJson Json     @default("{}")
+  prdMarkdown   String   @default("")
+  mermaidCode   String   @default("")
+  aiModel       String   @default("")
+  rejectReason  String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  comments      Comment[]
+  versions      RequirementVersion[]
+}
+
+model Comment {
+  id            String   @id @default(cuid())
+  requirementId String
+  requirement   Requirement @relation(fields: [requirementId], references: [id])
+  sectionKey    String   @default("")
+  content       String
+  createdAt     DateTime @default(now())
+}
+
+model RequirementVersion {
+  id            String   @id @default(cuid())
+  requirementId String
+  requirement   Requirement @relation(fields: [requirementId], references: [id])
+  versionNo     Int
+  prdMarkdown   String
+  changeReason  String   @default("")
+  createdAt     DateTime @default(now())
+}
