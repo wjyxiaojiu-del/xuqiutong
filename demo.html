@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>需求通 - 操作演示</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            color: #1a1a2e;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: inline-block;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-card h3 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .steps {
+            counter-reset: step;
+        }
+        .step {
+            position: relative;
+            padding: 25px 25px 25px 80px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .step:hover {
+            background: #e9ecef;
+            transform: translateX(10px);
+        }
+        .step::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .step h3 {
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        .step p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .code-block {
+            background: #1a1a2e;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: "Consolas", "Monaco", monospace;
+        }
+        .code-block .comment { color: #6272a4; }
+        .code-block .command { color: #50fa7b; }
+        .highlight {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 4px solid #f39c12;
+            padding: 15px 20px;
+            border-radius: 0 10px 10px 0;
+            margin: 15px 0;
+        }
+        .highlight strong {
+            color: #e67e22;
+        }
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .tech-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        .file-tree {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: "Consolas", monospace;
+            line-height: 1.8;
+        }
+        .file-tree .folder { color: #f1fa8c; }
+        .file-tree .file { color: #8be9fd; }
+        .file-tree .special { color: #50fa7b; }
+        .upload-section {
+            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        .upload-section h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+        .upload-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        .upload-section li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .upload-section li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+        }
+        .stat-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-card .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .footer {
+            background: #1a1a2e;
+            color: white;
+            text-align: center;
+            padding: 30px;
+        }
+        .url-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            margin-top: 15px;
+            transition: transform 0.3s ease;
+        }
+        .url-link:hover {
+            transform: scale(1.05);
+        }
+        @media (max-width: 768px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .header h1 { font-size: 2em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🚀 需求通</h1>
+            <p>客户声音 → AI 萃取 → 产品文档</p>
+            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.7;">
+                把分散的客户声音转成可追溯、可审核、可沉淀的产品需求资产
+            </p>
+        </div>
+
+        <div class="content">
+            <!-- 核心功能 -->
+            <div class="section">
+                <h2>✨ 核心功能</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h3>🎯 AI 智能萃取</h3>
+                        <p>粘贴客户聊天记录，DeepSeek AI 自动提取结构化需求：痛点、目标、约束、优先级、证据</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>📄 一键生成 PRD</h3>
+                        <p>基于萃取结果自动生成产品需求文档，包含验收标准和 Mermaid 流程图</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>📊 数据看板</h3>
+                        <p>需求统计、客户分布、AI 提效报告可视化展示，一目了然</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>📁 批量导入</h3>
+                        <p>支持 CSV/TXT 文件批量导入客户反馈，飞书文档导入导出</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 效率提升 -->
+            <div class="section">
+                <h2>📈 效率提升数据</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="number">60.5%</div>
+                        <div class="label">平均提效</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">85%</div>
+                        <div class="label">需求提取时间节省</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">70%</div>
+                        <div class="label">PRD 编写时间节省</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">4.2/5</div>
+                        <div class="label">用户满意度</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作流程 -->
+            <div class="section">
+                <h2>🔄 操作流程</h2>
+                <div class="steps">
+                    <div class="step">
+                        <h3>录入客户声音</h3>
+                        <p>在「录入需求」页面粘贴客户聊天记录、售前咨询、售后反馈等原始文本，支持选择场景标签</p>
+                    </div>
+                    <div class="step">
+                        <h3>AI 自动萃取</h3>
+                        <p>点击「开始萃取」，AI 自动分析文本，提取结构化需求信息，包含痛点、目标、约束、证据等</p>
+                    </div>
+                    <div class="step">
+                        <h3>生成 PRD 文档</h3>
+                        <p>在萃取结果页面点击「生成 PRD」，AI 自动生成完整的产品需求文档和流程图</p>
+                    </div>
+                    <div class="step">
+                        <h3>审核与沉淀</h3>
+                        <p>支持审核状态流转（待审核→已通过/已驳回）和评论功能，版本管理和回滚已就绪。团队权限、成员管理待接入</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 技术栈 -->
+            <div class="section">
+                <h2>🛠️ 技术栈</h2>
+                <div class="tech-stack">
+                    <span class="tech-tag">Next.js 16</span>
+                    <span class="tech-tag">TypeScript</span>
+                    <span class="tech-tag">React 19</span>
+                    <span class="tech-tag">Tailwind CSS</span>
+                    <span class="tech-tag">Prisma ORM</span>
+                    <span class="tech-tag">PostgreSQL</span>
+                    <span class="tech-tag">DeepSeek AI</span>
+                    <span class="tech-tag">Recharts</span>
+                    <span class="tech-tag">Mermaid</span>
+                </div>
+            </div>
+
+            <!-- 上传说明 -->
+            <div class="section">
+                <h2>📦 上传说明</h2>
+                <div class="highlight">
+                    <strong>💡 提示：</strong>上传时请打包整个项目文件夹（排除 node_modules），或直接上传 GitHub 仓库链接
+                </div>
+
+                <div class="file-tree">
+                    <div><span class="folder">📁 xuqiutong/</span></div>
+                    <div>├── <span class="folder">📁 app/</span> <span style="color: #6272a4;"># 页面和 API 路由</span></div>
+                    <div>├── <span class="folder">📁 components/</span> <span style="color: #6272a4;"># React 组件</span></div>
+                    <div>├── <span class="folder">📁 lib/</span> <span style="color: #6272a4;"># 核心库（AI、数据库、工具）</span></div>
+                    <div>├── <span class="folder">📁 prisma/</span> <span style="color: #6272a4;"># 数据库 Schema</span></div>
+                    <div>├── <span class="folder">📁 public/</span> <span style="color: #6272a4;"># 静态资源</span></div>
+                    <div>├── <span class="folder">📁 scripts/</span> <span style="color: #6272a4;"># 工具脚本</span></div>
+                    <div>├── <span class="special">📄 .env.example</span> <span style="color: #6272a4;"># 环境变量模板</span></div>
+                    <div>├── <span class="file">📄 package.json</span> <span style="color: #6272a4;"># 依赖配置</span></div>
+                    <div>├── <span class="file">📄 README.md</span> <span style="color: #6272a4;"># 项目文档</span></div>
+                    <div>└── <span class="special">📄 demo.html</span> <span style="color: #6272a4;"># 本演示文件</span></div>
+                </div>
+
+                <div class="upload-section">
+                    <h3>✅ 需要上传的文件</h3>
+                    <ul>
+                        <li><strong>整个 xuqiutong 文件夹</strong>（排除 node_modules 和 .next）</li>
+                        <li>或上传 <strong>GitHub 仓库链接</strong>：<br>
+                            <a href="https://github.com/wjyxiaojiu-del/xuqiutong" style="color: #fff; text-decoration: underline;">
+                                https://github.com/wjyxiaojiu-del/xuqiutong
+                            </a>
+                        </li>
+                        <li>如需本地运行，需配置 <strong>.env</strong> 文件（参考 .env.example）</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 快速开始 -->
+            <div class="section">
+                <h2>🚀 快速开始</h2>
+                <div class="code-block">
+                    <span class="comment"># 1. 克隆项目</span><br>
+                    <span class="command">git clone https://github.com/wjyxiaojiu-del/xuqiutong.git</span><br><br>
+                    <span class="comment"># 2. 安装依赖</span><br>
+                    <span class="command">cd xuqiutong && npm install</span><br><br>
+                    <span class="comment"># 3. 配置环境变量</span><br>
+                    <span class="command">cp .env.example .env</span><br>
+                    <span class="comment"># 编辑 .env 填入你的 API Key</span><br><br>
+                    <span class="comment"># 4. 初始化数据库</span><br>
+                    <span class="command">npx prisma db push</span><br><br>
+                    <span class="comment"># 5. 启动开发服务器</span><br>
+                    <span class="command">npm run dev</span><br><br>
+                    <span class="comment"># 6. 打开浏览器访问</span><br>
+                    <span class="command">http://localhost:3000</span>
+                </div>
+            </div>
+
+            <!-- 在线演示 -->
+            <div class="section" style="text-align: center;">
+                <h2>🌐 在线体验</h2>
+                <p style="margin-bottom: 20px; color: #666;">已部署到阿里云服务器，可直接访问体验</p>
+                <a href="http://47.114.72.251:3000" class="url-link" target="_blank">
+                    访问在线演示 →
+                </a>
+            </div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="footer">
+            <p>需求通 - 客户声音到产品文档 · 2026</p>
+            <p style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
+                项目已开源 | GitHub: wjyxiaojiu-del/xuqiutong
+            </p>
+        </div>
+    </div>
+</body>
+</html>

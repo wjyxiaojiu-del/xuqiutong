@@ -1,6 +1,35 @@
 # 飞书/钉钉/腾讯文档 集成方案
 
-## 架构设计
+> **注意**：本文档包含"当前实现"和"目标实现"两部分。当前实现使用 `lark-cli + execFile` 方式，目标实现是完整的 OpenAPI/OAuth 集成。
+
+## 当前实现（已完成）
+
+通过 `lark-cli` 命令行工具实现飞书文档导入：
+
+```typescript
+// lib/feishu.ts - 当前实现方式
+import { execFile } from "child_process";
+
+export async function fetchFeishuDoc(docId: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile("lark-cli", ["doc", "export", docId], (err, stdout) => {
+      if (err) reject(err);
+      else resolve(stdout);
+    });
+  });
+}
+```
+
+**限制**：
+- 依赖本地安装的 `lark-cli`
+- 无 OAuth 认证，使用 CLI 预配置的凭证
+- 仅支持文档导出，不支持写入
+
+---
+
+## 目标实现（规划中）
+
+### 架构设计
 
 ```
 ┌─────────────────────────────────────────────────────────┐

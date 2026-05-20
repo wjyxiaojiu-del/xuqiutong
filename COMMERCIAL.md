@@ -1,11 +1,12 @@
 # 需求通 - 商业化升级计划
 
 ## 当前状态：可演示 MVP
-- SQLite/libSQL 本地数据库（开发环境）
+- PostgreSQL 数据库（已切换，通过 Prisma ORM）
 - 已接入 DeepSeek / OpenAI / Anthropic Claude（真实 AI 调用，需配置 API Key）
 - AI Provider 显式选择 + fallback 链（需 AI_FALLBACK=true）
 - Mock AI 兜底（无 Key 时自动降级）
-- 无认证、无权限体系
+- 异步 AI 任务系统（`/api/ai-jobs`，支持萃取/PRD 生成异步执行）
+- 无认证、无权限体系、无团队/组织/成员管理
 - 分页、排序、搜索防抖、状态枚举、状态流转校验、错误状态已就绪
 - PRD Prompt 已改为"证据/推断/待确认"三栏
 - AI 状态栏显示 provider、model、mock、fallback、最近错误
@@ -22,7 +23,7 @@
 - [x] PRD Prompt 证据/推断/待确认三栏
 - [x] AI 状态栏（provider、model、mock、fallback、错误）
 - [x] Seed 接口安全加固
-- [ ] 生产数据库（PostgreSQL / Supabase）
+- [x] 生产数据库（PostgreSQL，已通过 Prisma adapter 切换）
 - [ ] 用户认证（NextAuth / Clerk）
 - [ ] 文件上传（客户聊天记录文件、音频）
 - [ ] 错误监控 + 日志

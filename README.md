@@ -13,8 +13,9 @@
 
 ### 环境要求
 
-- Node.js >= 18
-- npm 或 pnpm
+- **Node.js 22 LTS**（`>=22 <23`，Node 25 会导致 build 风险）
+- PostgreSQL（推荐 14+）
+- npm
 
 ### 安装
 
@@ -27,8 +28,8 @@ npm install
 创建 `.env` 文件：
 
 ```env
-# 数据库（默认 SQLite，开发环境自动创建 dev.db）
-DATABASE_URL="file:./dev.db"
+# 数据库（PostgreSQL）
+DATABASE_URL="postgresql://user:password@localhost:5432/xuqiutong"
 
 # AI Provider 选择（可选值：deepseek / openai / anthropic / mock）
 # 不设置则自动使用第一个可用的 provider，无 key 时降级为 mock
@@ -80,18 +81,29 @@ npm run seed
 ## 状态流转规则
 
 ```
-pending → extracted → prd_generated → reviewing → approved
-                ↓                        ↓
-              failed                   rejected → reviewing / prd_generated
-                ↓
-         pending / extracted（重试）
+pending → extracting → extracted → prd_generated → reviewing → approved
+                    ↓        ↓                        ↓
+                  failed    failed                   rejected → reviewing / prd_generated
+                    ↓        ↓
+             pending（重试）  pending / extracted（重试）
 ```
+
+## 异步 AI 任务系统
+
+AI 萃取和 PRD 生成支持异步模式，避免长时间阻塞：
+
+- `POST /api/extract?async=true` — 创建萃取任务，返回 `AiJob`
+- `POST /api/generate-prd?async=true` — 创建 PRD 生成任务
+- `GET /api/ai-jobs` — 查询任务列表
+- `GET /api/ai-jobs/:id` — 查询单个任务状态
+
+任务状态：`queued → running → succeeded / failed`
 
 ## 技术栈
 
 - **前端**: Next.js 16 (App Router) + React 19 + Tailwind CSS + shadcn/ui
 - **后端**: Next.js API Routes + Prisma ORM
-- **数据库**: SQLite / libSQL（开发），PostgreSQL（生产规划）
+- **数据库**: PostgreSQL + Prisma ORM
 - **AI**: DeepSeek / OpenAI / Anthropic Claude（带 Mock 兜底）
 
 ## 项目结构
@@ -126,7 +138,7 @@ components/
 
 | 变量 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
-| `DATABASE_URL` | 否 | `file:./dev.db` | 数据库连接字符串 |
+| `DATABASE_URL` | **是** | - | PostgreSQL 连接字符串 |
 | `AI_PROVIDER` | 否 | 自动选择 | `deepseek` / `openai` / `anthropic` / `mock` |
 | `AI_FALLBACK` | 否 | `false` | 是否启用多 provider fallback 链 |
 | `DEEPSEEK_API_KEY` | 否 | - | DeepSeek API Key |
@@ -138,6 +150,6 @@ components/
 ## 已知限制
 
 - 无用户认证和权限控制，仅适合本地演示
-- SQLite 不适合高并发生产场景，需迁移至 PostgreSQL
+- 无团队/组织/成员体系，审核功能仅支持状态流转
 - 关联需求使用关键词匹配，中文语义相似度有限
 - AI 生成的 PRD 可能包含推断内容，已标注【证据】【推断】【待确认】，需人工审核
