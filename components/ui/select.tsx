@@ -9,6 +9,7 @@ interface SelectContextValue {
   onValueChange: (value: string) => void
   open: boolean
   setOpen: (open: boolean) => void
+  contentId: string
 }
 
 const SelectContext = React.createContext<SelectContextValue>({
@@ -16,6 +17,7 @@ const SelectContext = React.createContext<SelectContextValue>({
   onValueChange: () => {},
   open: false,
   setOpen: () => {},
+  contentId: "",
 })
 
 interface SelectProps {
@@ -28,6 +30,7 @@ interface SelectProps {
 function Select({ value, defaultValue = "", onValueChange, children }: SelectProps) {
   const [open, setOpen] = React.useState(false)
   const [internalValue, setInternalValue] = React.useState(defaultValue)
+  const contentId = React.useId()
   const currentValue = value !== undefined ? value : internalValue
 
   const handleValueChange = React.useCallback((newValue: string) => {
@@ -39,7 +42,7 @@ function Select({ value, defaultValue = "", onValueChange, children }: SelectPro
   }, [value, onValueChange])
 
   return (
-    <SelectContext.Provider value={{ value: currentValue, onValueChange: handleValueChange, open, setOpen }}>
+    <SelectContext.Provider value={{ value: currentValue, onValueChange: handleValueChange, open, setOpen, contentId }}>
       <div className="relative">
         {children}
       </div>
@@ -62,7 +65,7 @@ interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
   ({ className, size = "default", children, ...props }, ref) => {
-    const { open, setOpen } = React.useContext(SelectContext)
+    const { open, setOpen, contentId } = React.useContext(SelectContext)
 
     return (
       <button
@@ -70,6 +73,7 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
         type="button"
         role="combobox"
         aria-expanded={open}
+        aria-controls={contentId}
         data-slot="select-trigger"
         data-size={size}
         onClick={() => setOpen(!open)}
@@ -93,7 +97,7 @@ interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 function SelectContent({ className, children, side = "bottom", align = "center", ...props }: SelectContentProps) {
-  const { open, setOpen } = React.useContext(SelectContext)
+  const { open, setOpen, contentId } = React.useContext(SelectContext)
   const contentRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
@@ -113,6 +117,7 @@ function SelectContent({ className, children, side = "bottom", align = "center",
   return (
     <div
       ref={contentRef}
+      id={contentId}
       data-slot="select-content"
       className={cn(
         "absolute z-50 min-w-36 rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 animate-in fade-in-0 zoom-in-95",

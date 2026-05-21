@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await prisma.aiJob.deleteMany();
     await prisma.comment.deleteMany();
     await prisma.requirementVersion.deleteMany();
     await prisma.requirement.deleteMany();
@@ -102,9 +103,9 @@ export async function POST(request: NextRequest) {
           title: c.title,
           rawInput: `[演示数据] ${c.title}`,
           scenario: c.scenario,
-          sourceType: "text",
-          status: "prd_generated",
-          priority: c.priority,
+          sourceType: "text" as const,
+          status: "prd_generated" as const,
+          priority: c.priority as "P0" | "P1" | "P2" | "P3",
           aiModel: "mock",
           extractedJson: extracted,
           prdMarkdown: `# ${extracted.title} PRD\n\n## 1. 背景\n${extracted.scenario}\n\n## 2. 用户与场景\n- ${extracted.customerRole}\n\n## 3. 问题定义\n${extracted.painPoints.map((p, j) => `${j + 1}. ${p}`).join("\n")}\n\n## 4. 目标\n${extracted.goals.map(g => `- ${g}`).join("\n")}\n\n## 5. 功能需求\n（演示数据）\n\n## 6. 验收标准\n- [ ] 待补充\n\n## 7. 待确认问题\n${extracted.openQuestions.map(q => `- ${q}`).join("\n")}`,

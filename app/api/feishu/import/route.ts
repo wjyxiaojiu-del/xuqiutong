@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { fetchDocument, extractDocumentId } from "@/lib/integrations/feishu";
+import { fetchDocument } from "@/lib/integrations/feishu";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 

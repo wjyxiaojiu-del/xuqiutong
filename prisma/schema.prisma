@@ -7,53 +7,160 @@ datasource db {
   provider = "postgresql"
 }
 
+// ═══════════════════════════════════════════
+//  枚举类型 — 强约束，防止脏数据
+// ═══════════════════════════════════════════
+
+enum RequirementStatus {
+  pending       // 待萃取
+  extracting    // 萃取中
+  extracted     // 已萃取
+  prd_generated // 已生成 PRD
+  reviewing     // 待审核
+  approved      // 已通过
+  rejected      // 已驳回
+  failed        // 失败
+}
+
+enum Priority {
+  P0  // 紧急
+  P1  // 高
+  P2  // 中
+  P3  // 低
+}
+
+enum SourceType {
+  text     // 手动输入
+  audio    // 语音输入
+  feishu   // 飞书导入
+  import   // 批量导入
+  api      // API 接口
+}
+
+// ═══════════════════════════════════════════
+//  模型
+// ═══════════════════════════════════════════
+
 model Customer {
-  id          String   @id @default(cuid())
-  name        String
-  company     String   @default("")
-  industry    String   @default("")
-  contactName String   @default("")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  requirements Requirement[]
+  id              String                @id @default(cuid())
+  name            String
+  company         String                @default("")
+  industry        String                @default("")
+  contactName     String                @default("")
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  requirements    Requirement[]
+  requirementLinks RequirementCustomer[]
+
+  @@index([name, company])
 }
 
 model Requirement {
-  id            String   @id @default(cuid())
+  id            String           @id @default(cuid())
   customerId    String?
-  customer      Customer? @relation(fields: [customerId], references: [id])
-  title         String   @default("")
+  customer      Customer?        @relation(fields: [customerId], references: [id])
+  title         String           @default("")
   rawInput      String
-  sourceType    String   @default("text")
-  scenario      String   @default("")
-  status        String   @default("pending")
-  priority      String   @default("P1")
-  extractedJson Json     @default("{}")
-  prdMarkdown   String   @default("")
-  mermaidCode   String   @default("")
-  aiModel       String   @default("")
-  rejectReason  String   @default("")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  sourceType    SourceType       @default(text)
+  scenario      String           @default("")
+  status        RequirementStatus @default(pending)
+  priority      Priority         @default(P1)
+  extractedJson Json             @default("{}")
+  prdMarkdown   String           @default("")
+  mermaidCode   String           @default("")
+  aiModel       String           @default("")
+  rejectReason  String           @default("")
+  mergedIntoId  String?
+  mergedInto    Requirement?     @relation("MergedRequirements", fields: [mergedIntoId], references: [id])
+  mergedFrom    Requirement[]    @relation("MergedRequirements")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   comments      Comment[]
   versions      RequirementVersion[]
+  jobs          AiJob[]
+  customerLinks RequirementCustomer[]
+
+  @@index([status, priority])
+  @@index([customerId])
+  @@index([updatedAt])
 }
 
 model Comment {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   requirementId String
   requirement   Requirement @relation(fields: [requirementId], references: [id])
-  sectionKey    String   @default("")
+  sectionKey    String      @default("")
   content       String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime    @default(now())
+
+  @@index([requirementId])
 }
 
 model RequirementVersion {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   requirementId String
   requirement   Requirement @relation(fields: [requirementId], references: [id])
   versionNo     Int
   prdMarkdown   String
-  changeReason  String   @default("")
-  createdAt     DateTime @default(now())
+  changeReason  String      @default("")
+  createdAt     DateTime    @default(now())
+
+  @@unique([requirementId, versionNo])
+  @@index([requirementId])
+}
+
+// ═══════════════════════════════════════════
+//  AI 后台任务表 — 支持异步萃取/生成
+// ═══════════════════════════════════════════
+
+enum AiJobStatus {
+  queued     // 排队中
+  running    // 执行中
+  succeeded  // 成功
+  failed     // 失败
+}
+
+enum AiJobType {
+  extract     // 萃取
+  generate    // PRD 生成
+}
+
+model AiJob {
+  id             String      @id @default(cuid())
+  requirementId  String
+  requirement    Requirement @relation(fields: [requirementId], references: [id])
+  type           AiJobType
+  status         AiJobStatus @default(queued)
+  provider       String      @default("")
+  model          String      @default("")
+  error          String      @default("")
+  result         Json?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  createdAt      DateTime    @default(now())
+
+  @@index([status])
+  @@index([requirementId])
+}
+
+// ═══════════════════════════════════════════
+//  需求-客户关联（影响度评分）
+// ═══════════════════════════════════════════
+
+model RequirementCustomer {
+  id             String   @id @default(cuid())
+  requirementId  String
+  customerId     String
+  feedbackCount  Int      @default(1)
+  lastFeedback   DateTime @default(now())
+  contractValue  Float?
+  isRenewalRisk  Boolean  @default(false)
+  isDealBlocker  Boolean  @default(false)
+
+  requirement Requirement @relation(fields: [requirementId], references: [id])
+  customer    Customer    @relation(fields: [customerId], references: [id])
+
+  @@unique([requirementId, customerId])
+  @@index([requirementId])
+  @@index([customerId])
 }

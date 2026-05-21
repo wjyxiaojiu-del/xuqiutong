@@ -232,6 +232,7 @@ function DropdownMenuRadioItem({
   className,
   children,
   inset,
+  "aria-checked": ariaChecked = false,
   ...props
 }: DropdownMenuRadioItemProps) {
   return (
@@ -239,6 +240,7 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset ? "" : undefined}
       role="menuitemradio"
+      aria-checked={ariaChecked}
       className={cn(
         "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground",
         inset && "pl-7",
@@ -320,6 +322,8 @@ function DropdownMenuSubContent({
   return (
     <div
       data-slot="dropdown-menu-sub-content"
+      data-align={align}
+      data-side={side}
       className={cn(
         "absolute left-full top-0 z-50 min-w-[96px] rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10 animate-in fade-in-0 zoom-in-95",
         className

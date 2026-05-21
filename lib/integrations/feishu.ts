@@ -1,7 +1,7 @@
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface FeishuDocument {
   documentId: string;
@@ -20,14 +20,25 @@ export function extractDocumentId(url: string): string | null {
 }
 
 /**
+ * 校验 docId 是否合法（白名单：字母数字下划线）
+ */
+function validateDocId(docId: string): string {
+  if (!/^[a-zA-Z0-9_-]+$/.test(docId)) {
+    throw new Error(`非法文档 ID: ${docId}`);
+  }
+  return docId;
+}
+
+/**
  * 获取飞书文档内容
  */
 export async function fetchDocument(docIdOrUrl: string): Promise<FeishuDocument> {
-  const docId = extractDocumentId(docIdOrUrl) || docIdOrUrl;
+  const docId = validateDocId(extractDocumentId(docIdOrUrl) || docIdOrUrl);
 
   try {
-    const { stdout } = await execAsync(
-      `lark-cli docs +fetch --doc ${docId} --api-version v2 --format json`,
+    const { stdout } = await execFileAsync(
+      "lark-cli",
+      ["docs", "+fetch", "--doc", docId, "--api-version", "v2", "--format", "json"],
       { timeout: 30000 }
     );
 
@@ -56,6 +67,11 @@ export async function createDocument(
   title: string,
   content: string
 ): Promise<FeishuDocument> {
+  // 标题白名单：禁止包含 shell 特殊字符
+  if (/[`$(){}|;&<>"'\\]/.test(title)) {
+    throw new Error("标题包含非法字符");
+  }
+
   try {
     // 将内容写入临时文件，避免命令行转义问题
     const fs = await import("fs/promises");
@@ -65,8 +81,9 @@ export async function createDocument(
     const tmpFile = path.join(os.tmpdir(), `feishu-${Date.now()}.md`);
     await fs.writeFile(tmpFile, content, "utf-8");
 
-    const { stdout } = await execAsync(
-      `lark-cli docs +create --title "${title}" --markdown "@${tmpFile}" --api-version v2 --format json`,
+    const { stdout } = await execFileAsync(
+      "lark-cli",
+      ["docs", "+create", "--title", title, "--markdown", `@${tmpFile}`, "--api-version", "v2", "--format", "json"],
       { timeout: 30000 }
     );
 
@@ -99,6 +116,8 @@ export async function updateDocument(
   docId: string,
   content: string
 ): Promise<void> {
+  validateDocId(docId);
+
   try {
     const fs = await import("fs/promises");
     const os = await import("os");
@@ -107,8 +126,9 @@ export async function updateDocument(
     const tmpFile = path.join(os.tmpdir(), `feishu-update-${Date.now()}.md`);
     await fs.writeFile(tmpFile, content, "utf-8");
 
-    const { stdout } = await execAsync(
-      `lark-cli docs +update --doc ${docId} --file "${tmpFile}" --api-version v2 --format json`,
+    const { stdout } = await execFileAsync(
+      "lark-cli",
+      ["docs", "+update", "--doc", docId, "--file", tmpFile, "--api-version", "v2", "--format", "json"],
       { timeout: 30000 }
     );
 
@@ -130,9 +150,11 @@ export async function updateDocument(
  */
 export async function checkAuth(): Promise<boolean> {
   try {
-    const { stdout } = await execAsync("lark-cli auth status", {
-      timeout: 10000,
-    });
+    const { stdout } = await execFileAsync(
+      "lark-cli",
+      ["auth", "status"],
+      { timeout: 10000 }
+    );
     const result = JSON.parse(stdout);
     return result.tokenStatus === "valid";
   } catch {

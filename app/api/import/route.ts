@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { enqueueBatch } from "@/lib/ai/jobs";
 import { z } from "zod";
 
 const ImportItemSchema = z.object({
@@ -89,13 +90,34 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // 创建 customer link（用于影响评分）
+      if (customerId) {
+        await prisma.requirementCustomer.create({
+          data: {
+            requirementId: requirement.id,
+            customerId,
+          },
+        });
+      }
+
       results.push({ id: requirement.id, title });
+    }
+
+    // auto 模式：批量创建 AI 萃取任务
+    let jobIds: string[] = [];
+    if (extractMode === "auto" && results.length > 0) {
+      jobIds = await enqueueBatch(results.map((r) => r.id), "extract");
     }
 
     return Response.json({
       success: true,
       count: results.length,
       requirements: results,
+      autoExtract: extractMode === "auto",
+      jobIds: jobIds.length > 0 ? jobIds : undefined,
+      message: extractMode === "auto"
+        ? `已导入 ${results.length} 条需求，后台正在自动萃取`
+        : `已导入 ${results.length} 条需求`,
     });
   } catch (error) {
     console.error("Import error:", error);

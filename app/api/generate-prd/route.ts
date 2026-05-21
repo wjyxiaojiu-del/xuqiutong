@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAIProvider } from "@/lib/ai/provider";
+import { enqueueAiJob } from "@/lib/ai/jobs";
 import { prisma } from "@/lib/prisma";
 import { createVersion } from "@/lib/version";
 import { z } from "zod";
@@ -9,6 +10,7 @@ const Schema = z.object({ requirementId: z.string() });
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const useAsync = request.nextUrl.searchParams.get("async") === "true";
     const parsed = Schema.safeParse(body);
     if (!parsed.success) {
       return Response.json({ error: "缺少 requirementId" }, { status: 400 });
@@ -22,6 +24,12 @@ export async function POST(request: NextRequest) {
     }
     if (!req.extractedJson) {
       return Response.json({ error: "请先完成萃取" }, { status: 400 });
+    }
+
+    // 异步模式
+    if (useAsync) {
+      const jobId = await enqueueAiJob(req.id, "generate");
+      return Response.json({ id: req.id, jobId, async: true });
     }
 
     const provider = getAIProvider();

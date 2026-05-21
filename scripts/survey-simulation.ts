@@ -195,8 +195,7 @@ function analyzeSurvey(responses: SurveyResponse[]) {
     overallSatisfaction: responses.reduce((sum, r) => sum + r.satisfaction.overallSatisfaction, 0) / totalResponses,
   };
 
-  // ROI 计算（假设每人每月工作 22 天，每天 8 小时）
-  const workingHoursPerMonth = 22 * 8;
+  // ROI 计算
   const monthlyTimeSavedPerPerson = (totalSaved / 60) * 30; // 假设每月处理 30 个需求
   const yearlyTimeSavedPerPerson = monthlyTimeSavedPerPerson * 12;
 
@@ -333,7 +332,7 @@ ${Object.entries(analysis.timeSavings).map(([key, data]) => {
 }
 
 // 主函数
-function main() {
+async function main() {
   console.log("🎯 开始生成 500 份模拟问卷调查...\n");
 
   const responses: SurveyResponse[] = [];
@@ -350,7 +349,7 @@ function main() {
   console.log(report);
 
   // 保存报告到文件
-  const fs = require('fs');
+  const fs = await import('fs');
   const reportPath = './survey-report.txt';
   fs.writeFileSync(reportPath, report);
   console.log(`\n✅ 报告已保存到: ${reportPath}`);

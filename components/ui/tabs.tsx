@@ -80,9 +80,12 @@ interface TabsListProps
     VariantProps<typeof tabsListVariants> {}
 
 function TabsList({ className, variant = "default", ...props }: TabsListProps) {
+  const { orientation } = React.useContext(TabsContext)
+
   return (
     <div
       role="tablist"
+      aria-orientation={orientation}
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(tabsListVariants({ variant }), className)}
@@ -96,7 +99,7 @@ interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 function TabsTrigger({ className, value, ...props }: TabsTriggerProps) {
-  const { value: selectedValue, onValueChange, orientation } = React.useContext(TabsContext)
+  const { value: selectedValue, onValueChange } = React.useContext(TabsContext)
   const isActive = selectedValue === value
 
   return (

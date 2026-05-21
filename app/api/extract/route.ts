@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
 import { getAIProvider } from "@/lib/ai/provider";
+import { enqueueAiJob } from "@/lib/ai/jobs";
 import { prisma } from "@/lib/prisma";
 import { CreateRequirementSchema } from "@/lib/schemas";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const useAsync = request.nextUrl.searchParams.get("async") === "true";
 
     // 重试模式：传 requirementId 重新萃取已有需求
     if (body.requirementId) {
@@ -94,7 +96,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Call AI to extract
+    // 创建 customer link（用于影响评分）
+    if (customerId) {
+      await prisma.requirementCustomer.create({
+        data: {
+          requirementId: requirement.id,
+          customerId,
+        },
+      });
+    }
+
+    // 异步模式：创建后台任务立即返回
+    if (useAsync) {
+      const jobId = await enqueueAiJob(requirement.id, "extract");
+      return Response.json({ id: requirement.id, jobId, async: true });
+    }
+
+    // 同步模式：等待 AI 返回
     const provider = getAIProvider();
     let extracted;
     try {

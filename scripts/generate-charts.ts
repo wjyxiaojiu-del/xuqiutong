@@ -475,6 +475,6 @@ const htmlContent = `
 </html>
 `;
 
-const fs = require('fs');
+import fs from 'fs';
 fs.writeFileSync('./survey-report.html', htmlContent);
 console.log('✅ 可视化报告已生成: survey-report.html');

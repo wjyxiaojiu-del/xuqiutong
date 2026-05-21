@@ -21,7 +21,15 @@ const AI_STEPS = [
   "正在生成结构化结果...",
 ];
 
-export function AILoadingState({ text }: { text?: string }) {
+export function AILoadingState({
+  text,
+  actionLabel,
+  onAction,
+}: {
+  text?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(0);
 
@@ -68,6 +76,15 @@ export function AILoadingState({ text }: { text?: string }) {
             />
           ))}
         </div>
+        {actionLabel && onAction && (
+          <button
+            type="button"
+            onClick={onAction}
+            className="text-[13px] font-medium text-[#6c6a64] hover:text-[#141413]"
+          >
+            {actionLabel}
+          </button>
+        )}
       </div>
     </div>
   );

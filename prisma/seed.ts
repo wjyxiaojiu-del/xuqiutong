@@ -393,7 +393,7 @@ async function main() {
       data: {
         ...caseData.requirement,
         customerId: customer.id,
-      },
+      } as Parameters<typeof prisma.requirement.create>[0]["data"],
     });
 
     console.log(`  Created: ${caseData.requirement.title}`);

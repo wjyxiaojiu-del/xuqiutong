@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ExtractionResult } from "@/components/extraction-result";
 import { RelatedRequirements } from "@/components/related-requirements";
+import { CustomerImpactPanel } from "@/components/customer-impact";
 import { StatusBadge, PriorityBadge } from "@/components/status-badge";
-import { LoadingState, ErrorState } from "@/components/loading-state";
+import { LoadingState, ErrorState, AILoadingState } from "@/components/loading-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ExtractedData } from "@/lib/schemas";
 import { PRIORITY_LABELS } from "@/lib/schemas";
 import { toast } from "sonner";
+import { useAiJob } from "@/lib/hooks/use-ai-job";
 
 export default function ExtractPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +28,8 @@ export default function ExtractPage() {
   const [editing, setEditing] = useState(false);
   const [requirementStatus, setRequirementStatus] = useState("");
   const [retrying, setRetrying] = useState(false);
+  const { poll: pollExtract, status: extractJobStatus } = useAiJob();
+  const { poll: pollGenerate, status: generateJobStatus } = useAiJob();
 
   function loadRequirement() {
     setLoading(true);
@@ -71,14 +75,24 @@ export default function ExtractPage() {
   async function handleRetry() {
     setRetrying(true);
     try {
-      const res = await fetch("/api/extract", {
+      const res = await fetch("/api/extract?async=true", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requirementId: id }),
       });
+      const d = await res.json();
       if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
         toast.error(d.error || "重试失败");
+        return;
+      }
+      if (d.async && d.jobId) {
+        try {
+          await pollExtract(d.jobId);
+          toast.success("重新萃取成功");
+          loadRequirement();
+        } catch {
+          toast.error("萃取失败，请重试");
+        }
       } else {
         toast.success("重新萃取成功");
         loadRequirement();
@@ -116,7 +130,7 @@ export default function ExtractPage() {
   async function handleGeneratePRD() {
     setGenerating(true);
     try {
-      const res = await fetch("/api/generate-prd", {
+      const res = await fetch("/api/generate-prd?async=true", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requirementId: id }),
@@ -126,8 +140,18 @@ export default function ExtractPage() {
         toast.error(d.error || "PRD 生成失败");
         return;
       }
-      toast.success("PRD 生成完成");
-      router.push(`/prd/${id}`);
+      if (d.async && d.jobId) {
+        try {
+          await pollGenerate(d.jobId);
+          toast.success("PRD 生成完成");
+          router.push(`/prd/${id}`);
+        } catch {
+          toast.error("PRD 生成失败，请重试");
+        }
+      } else {
+        toast.success("PRD 生成完成");
+        router.push(`/prd/${id}`);
+      }
     } catch {
       toast.error("网络错误，请重试");
     } finally {
@@ -184,6 +208,17 @@ export default function ExtractPage() {
   }
 
   if (loading) return <LoadingState />;
+
+  if (retrying) {
+    const statusText = extractJobStatus === "queued" ? "排队等待中..." : "AI 正在重新萃取...";
+    return <AILoadingState text={statusText} />;
+  }
+
+  if (generating) {
+    const statusText = generateJobStatus === "queued" ? "排队等待中..." : "AI 正在生成 PRD...";
+    return <AILoadingState text={statusText} />;
+  }
+
   if (error) return <ErrorState text={error} />;
 
   if (!data) {
@@ -259,7 +294,12 @@ export default function ExtractPage() {
         <ExtractionResult data={data} />
       )}
 
-      {!editing && <RelatedRequirements requirementId={id} />}
+      {!editing && (
+        <>
+          <CustomerImpactPanel requirementId={id} />
+          <RelatedRequirements requirementId={id} />
+        </>
+      )}
     </div>
   );
 }

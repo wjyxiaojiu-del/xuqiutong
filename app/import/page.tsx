@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FeishuImport } from "@/components/feishu-import";
 import { toast } from "sonner";
 
@@ -17,6 +17,57 @@ interface ImportItem {
   industry?: string;
   contactName?: string;
   scenario?: string;
+}
+
+function parseCSV(text: string): ImportItem[] {
+  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+  const items: ImportItem[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(",").map((v) => v.trim());
+    const row: Record<string, string> = {};
+    headers.forEach((h, idx) => {
+      row[h] = values[idx] || "";
+    });
+
+    const rawInput =
+      row["rawinput"] || row["raw_input"] || row["内容"] || row["需求内容"] || row["反馈内容"] || row["客户声音"] || "";
+    if (!rawInput) continue;
+
+    items.push({
+      rawInput,
+      customerName:
+        row["customername"] || row["customer_name"] || row["客户"] || row["客户名称"] || undefined,
+      company: row["company"] || row["公司"] || undefined,
+      industry: row["industry"] || row["行业"] || undefined,
+      contactName:
+        row["contactname"] || row["contact_name"] || row["联系人"] || undefined,
+      scenario: row["scenario"] || row["场景"] || undefined,
+    });
+  }
+
+  return items;
+}
+
+function parseTXT(text: string): ImportItem[] {
+  const blocks = text.split(/\n\s*\n|\n---+\n|\n=+=+\n/).filter((b) => b.trim().length > 0);
+  if (blocks.length === 0) {
+    return text
+      .split("\n")
+      .filter((l) => l.trim().length > 10)
+      .map((l) => ({ rawInput: l.trim() }));
+  }
+  return blocks.map((b) => ({ rawInput: b.trim() }));
+}
+
+function parseFileContent(text: string, ext: string): ImportItem[] {
+  if (ext === "csv") {
+    return parseCSV(text);
+  }
+  return parseTXT(text);
 }
 
 export default function ImportPage() {
@@ -34,60 +85,7 @@ export default function ImportPage() {
     requirements: { id: string; title: string }[];
   } | null>(null);
 
-  function parseCSV(text: string): ImportItem[] {
-    const lines = text.split("\n").filter((l) => l.trim().length > 0);
-    if (lines.length < 2) return [];
-
-    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
-    const items: ImportItem[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim());
-      const row: Record<string, string> = {};
-      headers.forEach((h, idx) => {
-        row[h] = values[idx] || "";
-      });
-
-      const rawInput =
-        row["rawinput"] || row["raw_input"] || row["内容"] || row["需求内容"] || row["反馈内容"] || row["客户声音"] || "";
-      if (!rawInput) continue;
-
-      items.push({
-        rawInput,
-        customerName:
-          row["customername"] || row["customer_name"] || row["客户"] || row["客户名称"] || undefined,
-        company: row["company"] || row["公司"] || undefined,
-        industry: row["industry"] || row["行业"] || undefined,
-        contactName:
-          row["contactname"] || row["contact_name"] || row["联系人"] || undefined,
-        scenario: row["scenario"] || row["场景"] || undefined,
-      });
-    }
-
-    return items;
-  }
-
-  function parseTXT(text: string): ImportItem[] {
-    // 按空行或分隔符拆分
-    const blocks = text.split(/\n\s*\n|\n---+\n|\n=+=+\n/).filter((b) => b.trim().length > 0);
-    if (blocks.length === 0) {
-      // 如果没有分隔符，按行拆分
-      return text
-        .split("\n")
-        .filter((l) => l.trim().length > 10) // 至少10个字符才算一条
-        .map((l) => ({ rawInput: l.trim() }));
-    }
-    return blocks.map((b) => ({ rawInput: b.trim() }));
-  }
-
-  function parseFileContent(text: string, ext: string): ImportItem[] {
-    if (ext === "csv") {
-      return parseCSV(text);
-    }
-    return parseTXT(text);
-  }
-
-  function handleFile(file: File) {
+  const handleFile = useCallback((file: File) => {
     const ext = file.name.split(".").pop()?.toLowerCase() || "txt";
     setFileName(file.name);
 
@@ -106,7 +104,7 @@ export default function ImportPage() {
       toast.success(`解析到 ${items.length} 条需求`);
     };
     reader.readAsText(file);
-  }
+  }, []);
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -129,7 +127,7 @@ export default function ImportPage() {
     setDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) handleFile(file);
-  }, []);
+  }, [handleFile]);
 
   function parseTextToItems(): ImportItem[] {
     const lines = textInput

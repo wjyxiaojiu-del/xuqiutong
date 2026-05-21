@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { VersionHistory } from "@/components/version-history";
 import { RelatedRequirements } from "@/components/related-requirements";
+import { CustomerImpactPanel } from "@/components/customer-impact";
 import { toast } from "sonner";
 
 interface RequirementData {
@@ -277,6 +278,9 @@ export default function PrdPage() {
 
       {/* PRD Content */}
       <PrdViewer prd={data.prdMarkdown} mermaid={data.mermaidCode} />
+
+      {/* Customer Impact */}
+      <CustomerImpactPanel requirementId={id} />
 
       {/* Related Requirements */}
       <RelatedRequirements requirementId={id} />

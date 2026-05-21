@@ -291,9 +291,6 @@ class FallbackProvider implements AIProvider {
 
 // --- Factory ---
 
-let _provider: AIProvider | null = null;
-let _status: AIStatus | null = null;
-
 function buildProvider(): { provider: AIProvider; status: AIStatus } {
   const explicitProvider = process.env.AI_PROVIDER?.toLowerCase();
 
@@ -435,25 +432,37 @@ function buildProvider(): { provider: AIProvider; status: AIStatus } {
   };
 }
 
+// Singleton：provider 和 status 同时初始化，避免缓存不一致
+let _builtProvider: AIProvider | null = null;
+let _builtStatus: AIStatus | null = null;
+let _fallbackRef: FallbackProvider | null = null;
+
+function ensureBuilt() {
+  if (_builtProvider && _builtStatus) return;
+  const { provider, status } = buildProvider();
+  _builtProvider = provider;
+  _builtStatus = status;
+  if (provider instanceof FallbackProvider) {
+    _fallbackRef = provider;
+  }
+}
+
 export function getAIProvider(): AIProvider {
-  if (_provider) return _provider;
-  const { provider } = buildProvider();
-  _provider = provider;
-  return _provider;
+  ensureBuilt();
+  return _builtProvider!;
 }
 
 export function getAIStatus(): AIStatus {
-  if (_status) return _status;
-  const { status, provider } = buildProvider();
-  _status = status;
-  // 更新 fallback 的 lastError
-  if (provider instanceof FallbackProvider) {
-    _status.lastError = provider.lastError;
+  ensureBuilt();
+  // 每次读取时同步 fallback 的最新 lastError
+  if (_fallbackRef && _builtStatus) {
+    _builtStatus.lastError = _fallbackRef.lastError ?? null;
   }
-  return _status;
+  return _builtStatus!;
 }
 
 export function resetAIProvider(): void {
-  _provider = null;
-  _status = null;
+  _builtProvider = null;
+  _builtStatus = null;
+  _fallbackRef = null;
 }
